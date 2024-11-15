@@ -1,0 +1,90 @@
+{"Greenhouse": [
+    {
+      "Week": "Week 1",
+      "Green lynx": 3,
+      "Thunder yellow": 4,
+      "White green/ Micromata Virescens": 4,
+      "Grain/ Larinia phthisica": 11,
+      "Bulge white": 13
+    },
+    {
+      "Week": "Week 2",
+      "Green lynx": 8,
+      "Thunder yellow": 4,
+      "White green/ Micromata Virescens": 3,
+      "Grain/ Larinia phthisica": 10,
+      "Bulge white": 11
+    },
+    {
+      "Week": "Week 3",
+      "Green lynx": 8,
+      "Thunder yellow": 5,
+      "White green/ Micromata Virescens": 4,
+      "Grain/ Larinia phthisica": 9,
+      "Bulge white": 8
+    },
+    {
+      "Week": "Week 4",
+      "Green lynx": 5,
+      "Thunder yellow": 6,
+      "White green/ Micromata Virescens": 3,
+      "Grain/ Larinia phthisica": 8,
+      "Bulge white": 9
+    },
+    {
+      "Week": "Week 5",
+      "Green lynx": 4,
+      "Thunder yellow": 6,
+      "White green/ Micromata Virescens": 5,
+      "Grain/ Larinia phthisica": 12,
+      "Bulge white": 10
+    }
+  ],
+  "Animal House": [
+    {
+      "Week": "Week 1",
+      "Grain": 290,
+      "White green": 10,
+      "Bulge white": 52,
+      "Thunder": 5,
+      "Green lynx": 3
+    },
+    {
+      "Week": "Week 2",
+      "Grain": 194,
+      "White green": 12,
+      "Bulge white": 35,
+      "Thunder": 4,
+      "Green lynx": 3
+    },
+    {
+      "Week": "Week 3",
+      "Grain": 322,
+      "White green": 7,
+      "Bulge white": 61,
+      "Thunder": 5,
+      "Green lynx": 2
+    },
+    {
+      "Week": "Week 4",
+      "Grain": 355,
+      "White green": 15,
+      "Bulge white": 52,
+      "Thunder": 3,
+      "Green lynx": 7
+    },
+    {
+      "Week": "Week 5",
+      "Grain": 376,
+      "White green": 12,
+      "Bulge white": 72,
+      "Thunder": 6,
+      "Green lynx": 4
+    }
+  ]
+}
+
+
+
+
+

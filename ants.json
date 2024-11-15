@@ -1,0 +1,128 @@
+{
+    "Cricket Ground": [
+      {
+        "Week": "Week 1",
+        "Species 1": 187,
+        "Species 2": 109,
+        "Species 4": 0,
+        "Species 5": 1,
+        "Species 6": 0,
+        "Species 7": 9
+      },
+      {
+        "Week": "Week 2",
+        "Species 1": 158,
+        "Species 2": 62,
+        "Species 4": 0,
+        "Species 5": 0,
+        "Species 6": 0,
+        "Species 7": 0
+      },
+      {
+        "Week": "Week 3",
+        "Species 1": 114,
+        "Species 2": 10,
+        "Species 4": 141,
+        "Species 5": 0,
+        "Species 6": 0,
+        "Species 7": 0
+      },
+      {
+        "Week": "Week 4",
+        "Species 1": 31,
+        "Species 2": 47,
+        "Species 4": 0,
+        "Species 5": 0,
+        "Species 6": 124,
+        "Species 7": 0
+      },
+      {
+        "Week": "Week 5",
+        "Species 1": 204,
+        "Species 2": 0,
+        "Species 4": 0,
+        "Species 5": 98,
+        "Species 6": 0,
+        "Species 7": 0
+      }
+    ],
+    "Shopping Complex": [
+      {
+        "Week": "Week 1",
+        "Species 1": 21,
+        "Species 2": 418,
+        "Species 3": 112,
+        "Species 4": 0,
+        "Species 5": 0,
+        "Species 6": 0
+      },
+      {
+        "Week": "Week 2",
+        "Species 1": 15,
+        "Species 2": 70,
+        "Species 3": 1,
+        "Species 4": 6,
+        "Species 5": 0,
+        "Species 6": 0
+      },
+      {
+        "Week": "Week 3",
+        "Species 1": 34,
+        "Species 2": 63,
+        "Species 3": 2,
+        "Species 4": 2,
+        "Species 5": 1,
+        "Species 6": 0
+      },
+      {
+        "Week": "Week 4",
+        "Species 1": 14,
+        "Species 2": 567,
+        "Species 3": 6,
+        "Species 4": 10,
+        "Species 5": 0,
+        "Species 6": 329
+      },
+      {
+          "Week": "Week 5",
+          "Species 1": 6,
+          "Species 2": 735,
+          "Species 3": 3,
+          "Species 4": 0,
+          "Species 5": 2,
+          "Species 6": 20
+      }
+    ],
+    "Playground": [
+      {
+        "Week": "Week 1",
+        "Species 1": 192,
+        "Species 2": 124,
+        "Species 8": 0
+      },
+      {
+        "Week": "Week 2",
+        "Species 1": 149,
+        "Species 2": 340,
+        "Species 8": 0
+      },
+      {
+        "Week": "Week 3",
+        "Species 1": 217,
+        "Species 2": 128,
+        "Species 8": 0
+      },
+      {
+        "Week": "Week 4",
+        "Species 1": 22,
+        "Species 2": 315,
+        "Species 8": 0
+      },
+      {
+          "Week": "Week 5",
+          "Species 1": 240,
+          "Species 2": 276,
+          "Species 8": 159
+      }
+    ]
+  }
