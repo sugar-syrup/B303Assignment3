@@ -9,6 +9,7 @@ import os
 # Output directory setup
 output_dir = "spider_plots"
 os.makedirs(output_dir, exist_ok=True)
+os.makedirs(f"{output_dir}/individual", exist_ok=True)
 
 # Read input JSON file
 print(f"Reading {sys.argv[1]}...")
@@ -131,18 +132,33 @@ def calculate_relative_abundance(data):
 greenhouse_rel = calculate_relative_abundance(greenhouse)
 animal_house_rel = calculate_relative_abundance(animal_house)
 
-# Calculate Shannon diversity
-def calculate_shannon(data):
-    shannon_df = pd.DataFrame()
-    shannon_df["Week"] = data["Week"]
-    species_cols = data.columns[1:]
-    for col in species_cols:
-        shannon_df[f"{col} Diversity"] = -data[col] * np.log(data[col])
-        shannon_df[f"{col} Equitability"] = shannon_df[f"{col} Diversity"] / shannon_df[f"{col} Diversity"].max()
-    return shannon_df
+Shannon = {}
 
-greenhouse_shannon = calculate_shannon(greenhouse_rel)
-animal_house_shannon = calculate_shannon(animal_house_rel)
+def calculate_shannon(data,label):
+  print(label)
+  shannon_df = pd.DataFrame()
+  shannon_df["Week"] = data["Week"]
+  species_cols = data.columns[1:]
+  for index, row in data.iterrows():
+    data_row = row[species_cols]
+    shannon_df.loc[index, "Species Count"] = len(data_row[data_row > 0])
+  for col in species_cols:
+    shannon_df[f"{col} Diversity"] = -data[col] * np.log(data[col])
+
+  New_Df = pd.DataFrame()
+  New_Df["Week"] = shannon_df["Week"]
+  New_Df["Species Count"] = shannon_df["Species Count"]
+  New_Df["Shannon Diversity"] = shannon_df.filter(regex="Diversity$").sum(axis=1)
+  New_Df["Equitability"] = shannon_df.filter(regex='Diversity$').sum(axis=1, skipna=True) / np.log(shannon_df['Species Count'])
+  Shannon[label] = New_Df
+  
+  # print(f"Diversity: \n {shannon_df.filter(regex="Diversity$").sum(axis=1)}")
+  # print(f"Species Count: \n {shannon_df['Species Count']}")
+  # print(f"Equitability: \n {shannon_df.filter(regex='Diversity$').sum(axis=1, skipna=True) / np.log(shannon_df['Species Count'])}")
+  return shannon_df
+
+greenhouse_shannon = calculate_shannon(greenhouse_rel, "Greenhouse")
+animal_house_shannon = calculate_shannon(animal_house_rel, "Animal House")
 
 # Plot diversity and equitability
 # Improved Shannon Diversity and Equitability Plot
@@ -152,9 +168,8 @@ def plot_diversity_equitability(dfs_tuple, labels):
     markers = ['o', 's', '^', 'D', 'P', '*', 'X', 'H', 'v', '<', '>']
 
     for i, (df, label) in enumerate(zip(dfs_tuple, labels)):
-        df['Shannon Diversity (H)'] = df.filter(regex='Diversity$').mean(axis=1, skipna=True)
-        df['Equitability (J)'] = df.filter(regex='Equitability$').mean(axis=1, skipna=True)
-
+        df['Shannon Diversity (H)'] = Shannon[label]["Shannon Diversity"]
+        df['Equitability (J)'] = Shannon[label]["Equitability"]
         ax1.plot(df['Week'], df['Shannon Diversity (H)'], color=colors[i], marker=markers[i % len(markers)],
                  linestyle='-', linewidth=2, label=f'{label} - Shannon Diversity (H)')
 
@@ -256,3 +271,92 @@ def plot_rank_abundance(dfs_tuple, labels):
 
 # Call the function for rank abundance plot
 plot_rank_abundance((greenhouse_rel, animal_house_rel), ["Greenhouse", "Animal House"])
+
+
+def plot_individual_diversity_equitability(df, label):
+    fig, ax1 = plt.subplots(figsize=(8, 5))
+    
+    df['Shannon Diversity (H)'] = Shannon[label]["Shannon Diversity"]
+    df['Equitability (J)'] = Shannon[label]["Equitability"]
+
+    # Calculate the range for shared y-axis scaling
+    combined_min = min(df['Shannon Diversity (H)'].min(), df['Equitability (J)'].min())
+    combined_max = max(df['Shannon Diversity (H)'].max(), df['Equitability (J)'].max())
+
+    # Shannon Diversity
+    ax1.plot(df['Week'], df['Shannon Diversity (H)'], marker='o', linestyle='-', color='blue', label="Shannon Diversity (H)")
+    ax1.set_xlabel('Weeks', fontsize=12)
+    ax1.set_ylabel('Shannon Diversity (H)', fontsize=12, color='blue')
+    ax1.tick_params(axis='y', labelcolor='blue')
+    ax1.set_ylim(combined_min, combined_max)
+    ax1.grid(visible=True, linestyle='--', linewidth=0.5, alpha=0.7)
+
+    # Equitability (on the second axis)
+    ax2 = ax1.twinx()
+    ax2.plot(df['Week'], df['Equitability (J)'], marker='s', linestyle='--', color='green', label="Equitability (J)")
+    ax2.set_ylabel('Equitability (J)', fontsize=12, color='green')
+    ax2.tick_params(axis='y', labelcolor='green')
+    ax2.set_ylim(combined_min, combined_max)
+
+    # Titles and Legends
+    fig.suptitle(f'Diversity and Equitability Over Time: {label}', fontsize=14, fontweight='bold')
+    fig.tight_layout()
+    plt.savefig(f"{output_dir}/individual/diversity_equitability_{label.lower().replace(' ', '_')}.png")
+    plt.close()
+
+
+# Generate Individual Plots
+plot_individual_diversity_equitability(Shannon["Greenhouse"], "Greenhouse")
+plot_individual_diversity_equitability(Shannon["Animal House"], "Animal House")
+
+
+def plot_individual_observations(df, label):
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    for col in df.columns[1:]:
+        ax.plot(df['Week'], df[col], marker='o', linestyle='-', label=col)
+
+    ax.set_xlabel('Weeks', fontsize=12)
+    ax.set_ylabel('Observed Individuals', fontsize=12)
+    ax.set_title(f'Observed Individuals Over Time: {label}', fontsize=14, fontweight='bold')
+    ax.legend(loc="upper left", bbox_to_anchor=(1, 1))
+    ax.grid(visible=True, linestyle='--', linewidth=0.5, alpha=0.7)
+
+    plt.tight_layout()
+    plt.savefig(f"{output_dir}/individual/observed_individuals_{label.lower().replace(' ', '_')}.png")
+    plt.close()
+
+# Generate Individual Observation Plots
+plot_individual_observations(greenhouse, "Greenhouse")
+plot_individual_observations(animal_house, "Animal House")
+
+
+def plot_individual_rank_abundance(df, label):
+    species_cols = [col for col in df.columns if col != "Week"]
+    avg_rel_abundance = df[species_cols].mean().sort_values(ascending=False)
+    ranks = range(1, len(avg_rel_abundance) + 1)
+    colors = plt.cm.tab20(np.linspace(0, 1, len(avg_rel_abundance)))
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.bar(ranks, avg_rel_abundance, color=colors, edgecolor='k', alpha=0.8)
+    ax.set_xlabel("Rank (Abundance)", fontsize=12)
+    ax.set_ylabel("Average Relative Abundance", fontsize=12)
+    ax.set_title(f'Rank Abundance: {label}', fontsize=14, fontweight='bold')
+    ax.set_xticks(ranks)
+    ax.set_xticklabels(ranks)
+    ax.grid(axis='y', color='grey', linestyle='--', linewidth=0.5, alpha=0.7)
+
+    # Species Legend
+    legend_labels = avg_rel_abundance.index
+    legend_handles = [plt.Line2D([0], [0], color=color, marker='o', linestyle='', markersize=8) for color in colors]
+    ax.legend(legend_handles, legend_labels, title="Species", loc='upper right', bbox_to_anchor=(1.3, 1))
+
+    plt.tight_layout()
+    plt.savefig(f"{output_dir}/individual/rank_abundance_{label.lower().replace(' ', '_')}.png")
+    plt.close()
+
+# Generate Individual Rank Abundance Plots
+plot_individual_rank_abundance(greenhouse_rel, "Greenhouse")
+plot_individual_rank_abundance(animal_house_rel, "Animal House")
+
+

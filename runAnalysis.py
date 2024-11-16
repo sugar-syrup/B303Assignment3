@@ -6,9 +6,12 @@ import pandas as pd
 import numpy as np
 import os
 import seaborn as sns
+import warnings
+warnings.filterwarnings("ignore")
 
 output_dir = "output_plots"
 os.makedirs(output_dir, exist_ok=True)
+os.makedirs(f"{output_dir}/individuals", exist_ok=True)
 
 print(f"Reading {sys.argv[1]}...")
 
@@ -163,16 +166,32 @@ def calculate_relative_abundance(data):
 
 (childrens_park_rel, cricket_ground_rel, shopping_complex_rel) = (calculate_relative_abundance(childrens_park),calculate_relative_abundance(cricket_ground),calculate_relative_abundance(shopping_complex))
 
-def calculate_shannon(data):
+Shannon = {}
+
+def calculate_shannon(data,label):
+  print(label)
   shannon_df = pd.DataFrame()
   shannon_df["Week"] = data["Week"]
   species_cols = data.columns[1:]
+  for index, row in data.iterrows():
+    data_row = row[species_cols]
+    shannon_df.loc[index, "Species Count"] = len(data_row[data_row > 0])
   for col in species_cols:
     shannon_df[f"{col} Diversity"] = -data[col] * np.log(data[col])
-    shannon_df[f"{col} Equitability"] = shannon_df[f"{col} Diversity"] / shannon_df[f"{col} Diversity"].max()
+
+  New_Df = pd.DataFrame()
+  New_Df["Week"] = shannon_df["Week"]
+  New_Df["Species Count"] = shannon_df["Species Count"]
+  New_Df["Shannon Diversity"] = shannon_df.filter(regex="Diversity$").sum(axis=1)
+  New_Df["Equitability"] = shannon_df.filter(regex='Diversity$').sum(axis=1, skipna=True) / np.log(shannon_df['Species Count'])
+  Shannon[label] = New_Df
+  
+  # print(f"Diversity: \n {shannon_df.filter(regex="Diversity$").sum(axis=1)}")
+  # print(f"Species Count: \n {shannon_df['Species Count']}")
+  # print(f"Equitability: \n {shannon_df.filter(regex='Diversity$').sum(axis=1, skipna=True) / np.log(shannon_df['Species Count'])}")
   return shannon_df
 
-(childrens_park_shannon, cricket_ground_shannon, shopping_complex_shannon) = (calculate_shannon(childrens_park_rel),calculate_shannon(cricket_ground_rel),calculate_shannon(shopping_complex_rel))
+(childrens_park_shannon, cricket_ground_shannon, shopping_complex_shannon) = (calculate_shannon(childrens_park_rel,"Childrens Park"),calculate_shannon(cricket_ground_rel, "Cricket Ground"),calculate_shannon(shopping_complex_rel, "Shopping Complex"))
 
 def plot_rank_abundance(dfs_tuple, labels):
     output_dir = "output_plots"
@@ -221,8 +240,8 @@ def plot_diversity_equitability(dfs_tuple, labels, output_dir=output_dir):
     markers = ['o', 's', '^', 'D', 'P', '*', 'X', 'H', 'v', '<', '>']
 
     for i, (df, label) in enumerate(zip(dfs_tuple, labels)):
-        df['Shannon Diversity (H)'] = df.filter(regex='Diversity$').mean(axis=1, skipna=True)
-        df['Equitability (J)'] = df.filter(regex='Equitability$').mean(axis=1, skipna=True)
+        df['Shannon Diversity (H)'] = Shannon[label]["Shannon Diversity"]
+        df['Equitability (J)'] = Shannon[label]["Equitability"]
 
         # Plot Shannon Diversity (H)
         ax1.plot(df['Week'], df['Shannon Diversity (H)'], color=colors[i], marker=markers[i % len(markers)], linestyle='-',
@@ -366,3 +385,177 @@ plot_species_density(
     (childrens_park_species_density, cricket_ground_species_density, shopping_complex_species_density),
     ["Childrens Park", "Cricket Ground", "Shopping Complex"]
 )
+
+
+def plot_individual_observations(dfs_tuple, labels, output_dir=output_dir):
+    for df, label in zip(dfs_tuple, labels):
+        fig, ax = plt.subplots(figsize=(8, 6))
+        for col in df.columns[1:]:
+            ax.plot(df['Week'], df[col], label=col)
+
+        ax.set_xlabel('Weeks', fontsize=12)
+        ax.set_ylabel('Observed Individuals', fontsize=12)
+        ax.set_title(f'{label}', fontsize=14, fontweight='bold')
+        ax.legend(title="Species")
+        ax.grid(visible=True, color='grey', linestyle='--', linewidth=0.5, alpha=0.7)
+
+        plt.tight_layout()
+        plt.savefig(f"{output_dir}/individuals/observed_individuals_{label.replace(' ', '_').lower()}.png")
+        plt.legend()
+        plt.close()
+
+
+def plot_individual_rank_abundance(dfs_tuple, labels, output_dir=output_dir):
+    all_species = set()
+    for df in dfs_tuple:
+        all_species.update(df.columns)
+    all_species = sorted([species for species in all_species if species != "Week"])
+
+    colors = sns.color_palette("hls", len(all_species))
+    color_map = dict(zip(all_species, colors))
+
+    for df, label in zip(dfs_tuple, labels):
+        species_cols = [col for col in df.columns if col != "Week"]
+        avg_rel_abundance = df[species_cols].mean().sort_values(ascending=False)
+        ranks = range(1, len(avg_rel_abundance) + 1)
+        bar_colors = [color_map[species] for species in avg_rel_abundance.index]
+
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.bar(ranks, avg_rel_abundance, color=bar_colors, edgecolor='k', alpha=0.8)
+        ax.set_xlabel("Rank (Abundance)", fontsize=12)
+        ax.set_ylabel("Average Relative Abundance", fontsize=12)
+        ax.set_title(f"Rank Abundance - {label}", fontsize=14, fontweight='bold')
+        ax.set_xticks(ranks)
+        ax.set_xticklabels(ranks)
+        ax.grid(axis='y', color='grey', linestyle='--', linewidth=0.5, alpha=0.7)
+
+        plt.tight_layout()
+        plt.savefig(f"{output_dir}/individuals/rank_abundance_{label.replace(' ', '_').lower()}.png")
+        plt.legend()
+        plt.close()
+
+
+def plot_individual_diversity_equitability(dfs_tuple, labels, output_dir=output_dir):
+    colors = sns.color_palette("hls", len(dfs_tuple))
+    markers = ['o', 's', '^', 'D', 'P', '*', 'X', 'H', 'v', '<', '>']
+
+    for i, (df, label) in enumerate(zip(dfs_tuple, labels)):
+        fig, ax1 = plt.subplots(figsize=(8, 6))
+        df['Shannon Diversity (H)'] = Shannon[label]["Shannon Diversity"]
+        df['Equitability (J)'] = Shannon[label]["Equitability"]
+
+        # Plot Shannon Diversity
+        ax1.plot(df['Week'], df['Shannon Diversity (H)'], color=colors[i], marker=markers[i % len(markers)], linestyle='-',
+                 linewidth=2, label='Shannon Diversity (H)')
+        ax1.set_xlabel('Weeks', fontsize=12)
+        ax1.set_ylabel('Shannon Diversity (H)', fontsize=12)
+        ax1.grid(visible=True, color='grey', linestyle='--', linewidth=0.5, alpha=0.7)
+
+        ax2 = ax1.twinx()
+        # Plot Equitability
+        ax2.plot(df['Week'], df['Equitability (J)'], color=colors[i], marker=markers[i % len(markers)], linestyle='--',
+                 linewidth=2, label='Equitability (J)')
+        ax2.set_ylabel('Equitability (J)', fontsize=12)
+
+        fig.suptitle(f"Diversity and Equitability - {label}", fontsize=14, fontweight='bold')
+        plt.tight_layout()
+        plt.savefig(f"{output_dir}/individuals/diversity_equitability_{label.replace(' ', '_').lower()}.png")
+        plt.legend()
+        plt.close()
+
+
+def plot_individual_species_density(dfs_tuple, labels, output_dir=output_dir):
+    all_species = set()
+    for df in dfs_tuple:
+        all_species.update(col.replace(" Density", "") for col in df.columns if "Density" in col)
+
+    all_species = sorted(all_species)
+    colors = sns.color_palette("hls", len(all_species))
+
+    for df, label in zip(dfs_tuple, labels):
+        fig, ax = plt.subplots(figsize=(8, 6))
+        for species, color in zip(all_species, colors):
+            species_density_col = f"{species} Density"
+            if species_density_col in df.columns:
+                ax.plot(df["Week"], df[species_density_col], label=species, color=color, linestyle='-', marker='o')
+
+        ax.set_xlabel("Weeks", fontsize=12)
+        ax.set_ylabel("Density (Individuals/m²)", fontsize=12)
+        ax.set_title(f"Species Density - {label}", fontsize=14, fontweight="bold")
+        ax.grid(visible=True, color='grey', linestyle='--', linewidth=0.5, alpha=0.7)
+        ax.legend(title="Species")
+
+        plt.tight_layout()
+        plt.savefig(f"{output_dir}/individuals/species_density_{label.replace(' ', '_').lower()}.png")
+        plt.legend(loc="best")
+        plt.close()
+
+plot_individual_observations(
+    (childrens_park, cricket_ground, shopping_complex),
+    ["Childrens Park", "Cricket Ground", "Shopping Complex"]
+)
+
+plot_individual_rank_abundance(
+    (childrens_park_rel, cricket_ground_rel, shopping_complex_rel),
+    ["Childrens Park", "Cricket Ground", "Shopping Complex"]
+)
+
+plot_individual_diversity_equitability(
+    (childrens_park_shannon, cricket_ground_shannon, shopping_complex_shannon),
+    ["Childrens Park", "Cricket Ground", "Shopping Complex"]
+)
+
+plot_individual_species_density(
+    (childrens_park_species_density, cricket_ground_species_density, shopping_complex_species_density),
+    ["Childrens Park", "Cricket Ground", "Shopping Complex"]
+)
+
+
+def plot_combined_diversity_equitability(weeks, labels):
+
+    # Colors and markers for different lines
+    colors = plt.cm.tab10.colors  # Predefined color palette
+    markers = ['o', 's', 'D', '^', 'v', '<', '>', '*', 'h', 'p']  # Different markers
+
+    # Combined Diversity Plot
+    plt.figure(figsize=(10, 6))
+    for idx, label in enumerate(labels):
+        plt.plot(
+            weeks,
+            Shannon[label]["Shannon Diversity"],
+            marker=markers[idx % len(markers)],
+            linestyle='-',
+            color=colors[idx % len(colors)],
+            label=label
+        )
+    plt.title(' Shannon Diversity (H) Over Time', fontsize=14, fontweight='bold')
+    plt.xlabel('Weeks', fontsize=12)
+    plt.ylabel('Shannon Diversity (H)', fontsize=12)
+    plt.legend()
+    plt.grid(visible=True, linestyle='--', linewidth=0.5, alpha=0.7)
+    plt.tight_layout()
+    plt.savefig(f"{output_dir}/combined_shannon_diversity.png")
+    plt.close()
+
+    # Combined Equitability Plot
+    plt.figure(figsize=(10, 6))
+    for idx, label in enumerate(labels):
+        plt.plot(
+            weeks,
+            Shannon[label]["Equitability"],
+            marker=markers[idx % len(markers)],
+            linestyle='-',
+            color=colors[idx % len(colors)],
+            label=label
+        )
+    plt.title('Equitability (J) Over Time', fontsize=14, fontweight='bold')
+    plt.xlabel('Weeks', fontsize=12)
+    plt.ylabel('Equitability (J)', fontsize=12)
+    plt.legend()
+    plt.grid(visible=True, linestyle='--', linewidth=0.5, alpha=0.7)
+    plt.tight_layout()
+    plt.savefig(f"{output_dir}/combined_equitability.png")
+    plt.close()
+
+
+plot_combined_diversity_equitability(weeks=["Week 1", "Week 2", "Week 3", "Week 4", "Week 5"],labels=["Childrens Park", "Cricket Ground", "Shopping Complex"])
